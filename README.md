@@ -20,5 +20,13 @@
     - Define some parameters and define `detector` object from `DetectorFactory.getDetector` (in `tflite/DetectorFactory`). In `DetectorFactory`, we implement `getDectector` function by calling some code from `YoloV5Classifier`
     - In `processImage`, process image input and get results of detection by `detector.recognizeImage`
         
+    - We dont use `YoloV5ClassifierDetect`
 
+### Tree
 
+|`DetectorActivity` 
+        |`CameraActivity`
+                |`CameraConnectionFragment` 
+                |`LegacyCameraConnectionFragment`
+        |`YoloV5Classifier`
+                |`MainActivity`
