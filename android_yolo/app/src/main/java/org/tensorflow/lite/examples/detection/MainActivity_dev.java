@@ -1,12 +1,13 @@
 package org.tensorflow.lite.examples.detection;
 
-import androidx.appcompat.app.AppCompatActivity;
-
+import android.annotation.SuppressLint;
 import android.app.ActivityManager;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ConfigurationInfo;
 import android.graphics.Bitmap;
+import android.net.Uri;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Matrix;
@@ -14,14 +15,22 @@ import android.graphics.Paint;
 import android.graphics.RectF;
 import android.os.Bundle;
 import android.os.Handler;
+import android.provider.MediaStore;
+import android.view.MenuInflater;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.PopupMenu;
 import android.widget.Toast;
+
+import android.net.Uri;
+
+import androidx.appcompat.app.AppCompatActivity;
 
 import org.tensorflow.lite.examples.detection.customview.OverlayView;
 import org.tensorflow.lite.examples.detection.env.ImageUtils;
 import org.tensorflow.lite.examples.detection.env.Logger;
 import org.tensorflow.lite.examples.detection.env.Utils;
+//import org.tensorflow.lite.examples.detection.env.BitmapUtils;
 import org.tensorflow.lite.examples.detection.tflite.Classifier;
 import org.tensorflow.lite.examples.detection.tflite.YoloV5Classifier;
 import org.tensorflow.lite.examples.detection.tracking.MultiBoxTracker;
@@ -30,20 +39,56 @@ import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
 
-public class MainActivity extends AppCompatActivity {
+
+public class MainActivity_dev extends AppCompatActivity {
 
     public static final float MINIMUM_CONFIDENCE_TF_OD_API = 0.3f;
+    private static final int REQUEST_IMAGE_CAPTURE = 1001;
+    private static final int REQUEST_CHOOSE_IMAGE = 1002;
+    private Uri imageUri;
+    private ImageView preview;
+    private static final String KEY_IMAGE_URI = "com.google.mlkit.vision.demo.KEY_IMAGE_URI";
+    private Bitmap imageBitmap;
 
+    @SuppressLint("MissingInflatedId")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        setContentView(R.layout.activity_image);
 
-        cameraButton = findViewById(R.id.cameraButton);
+        cameraButton = findViewById(R.id.selectButton);
         detectButton = findViewById(R.id.detectButton);
         imageView = findViewById(R.id.imageView);
 
-        cameraButton.setOnClickListener(v -> startActivity(new Intent(MainActivity.this, DetectorActivity.class)));
+        cameraButton.setOnClickListener(v -> {
+            // Menu for selecting either: a) take new photo b) select from existing
+            PopupMenu popup = new PopupMenu(MainActivity_dev.this, v);
+            popup.setOnMenuItemClickListener(
+                    menuItem -> {
+                        int itemId = menuItem.getItemId();
+                        if (itemId == R.id.select_images_from_local) {
+                            startChooseImageIntentForResult();
+                            return true;
+                        } else if (itemId == R.id.take_photo_using_camera) {
+                            startCameraIntentForResult();
+                            return true;
+                        }
+                        return false;
+                    });
+            MenuInflater inflater = popup.getMenuInflater();
+            inflater.inflate(R.menu.camera_button_menu, popup.getMenu());
+            popup.show();
+        });
+        preview = findViewById(R.id.imageView);
+        trackingOverlay = findViewById(R.id.tracking_overlay);
+        if (savedInstanceState != null) {
+            imageUri = savedInstanceState.getParcelable(KEY_IMAGE_URI);}
+//        this.sourceBitmap = Utils.getBitmapFromAsset(MainActivity_dev.this, imageUri.toString());
+//        this.sourceBitmap = BitmapUtils.getBitmapFromContentUri(getContentResolver(), imageUri);
+
+//        this.cropBitmap = Utils.processBitmap(sourceBitmap, TF_OD_API_INPUT_SIZE);
+
+//        this.imageView.setImageBitmap(cropBitmap);
 
         detectButton.setOnClickListener(v -> {
             Handler handler = new Handler();
@@ -59,7 +104,7 @@ public class MainActivity extends AppCompatActivity {
             }).start();
 
         });
-        this.sourceBitmap = Utils.getBitmapFromAsset(MainActivity.this, "test.jpg");
+        this.sourceBitmap = Utils.getBitmapFromAsset(MainActivity_dev.this, imageUri.toString());
 
         this.cropBitmap = Utils.processBitmap(sourceBitmap, TF_OD_API_INPUT_SIZE);
 
@@ -76,7 +121,7 @@ public class MainActivity extends AppCompatActivity {
 
     private static final Logger LOGGER = new Logger();
 
-    public static final int TF_OD_API_INPUT_SIZE = 128;
+    public static final int TF_OD_API_INPUT_SIZE = 640;
 
     private static final boolean TF_OD_API_IS_QUANTIZED = false;
 
@@ -115,13 +160,6 @@ public class MainActivity extends AppCompatActivity {
 
         cropToFrameTransform = new Matrix();
         frameToCropTransform.invert(cropToFrameTransform);
-
-        tracker = new MultiBoxTracker(this);
-        trackingOverlay = findViewById(R.id.tracking_overlay);
-        trackingOverlay.addCallback(
-                canvas -> tracker.draw(canvas));
-
-        tracker.setFrameConfiguration(TF_OD_API_INPUT_SIZE, TF_OD_API_INPUT_SIZE, sensorOrientation);
 
         try {
             detector =
@@ -166,4 +204,27 @@ public class MainActivity extends AppCompatActivity {
 //        trackingOverlay.postInvalidate();
         imageView.setImageBitmap(bitmap);
     }
+    private void startCameraIntentForResult() {
+        // Clean up last time's image
+        imageUri = null;
+        preview.setImageBitmap(null);
+
+        Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        if (takePictureIntent.resolveActivity(getPackageManager()) != null) {
+            ContentValues values = new ContentValues();
+            values.put(MediaStore.Images.Media.TITLE, "New Picture");
+            values.put(MediaStore.Images.Media.DESCRIPTION, "From Camera");
+            imageUri = getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
+            takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, imageUri);
+            startActivityForResult(takePictureIntent, REQUEST_IMAGE_CAPTURE);
+        }
+    }
+    private void startChooseImageIntentForResult() {
+        Intent intent = new Intent();
+        intent.setType("image/*");
+        intent.setAction(Intent.ACTION_GET_CONTENT);
+        startActivityForResult(Intent.createChooser(intent, "Select Picture"), REQUEST_CHOOSE_IMAGE);
+    }
+
 }
+

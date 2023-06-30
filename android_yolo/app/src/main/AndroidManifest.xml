@@ -25,7 +25,7 @@
         android:installLocation="internalOnly">
 
         <activity
-            android:name=".DetectorActivity"
+            android:name=".MainActivity_dev"
             android:label="@string/tfe_od_app_name"
             android:screenOrientation="portrait">
             <intent-filter>
