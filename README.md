@@ -23,10 +23,11 @@
     - We dont use `YoloV5ClassifierDetect`, `listview_row.xml`
 
 ### Tree
-
+```
 |`DetectorActivity` 
-        |`CameraActivity`
-                |`CameraConnectionFragment` 
-                |`LegacyCameraConnectionFragment`
-        |`YoloV5Classifier`
-                |`MainActivity`
+|        |`CameraActivity`
+|                |`CameraConnectionFragment` 
+|               |`LegacyCameraConnectionFragment`
+|        |`YoloV5Classifier`
+|               |`MainActivity`
+```
