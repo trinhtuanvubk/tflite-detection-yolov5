@@ -1,7 +1,5 @@
 package org.tensorflow.lite.examples.detection;
 
-import androidx.appcompat.app.AppCompatActivity;
-
 import android.app.ActivityManager;
 import android.content.Context;
 import android.content.Intent;
@@ -18,21 +16,23 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.Toast;
 
+import androidx.appcompat.app.AppCompatActivity;
+
 import org.tensorflow.lite.examples.detection.customview.OverlayView;
 import org.tensorflow.lite.examples.detection.env.ImageUtils;
 import org.tensorflow.lite.examples.detection.env.Logger;
 import org.tensorflow.lite.examples.detection.env.Utils;
-import org.tensorflow.lite.examples.detection.tflite.Classifier;
-import org.tensorflow.lite.examples.detection.tflite.YoloV5Classifier;
+import org.tensorflow.lite.examples.detection.yolo8.Classifier;
+import org.tensorflow.lite.examples.detection.yolo8.YoloV8Classifier;
 import org.tensorflow.lite.examples.detection.tracking.MultiBoxTracker;
 
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity_yolo8 extends AppCompatActivity {
 
-    public static final float MINIMUM_CONFIDENCE_TF_OD_API = 0.3f;
+    public static final float MINIMUM_CONFIDENCE_TF_OD_API = 0.4f;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,7 +43,7 @@ public class MainActivity extends AppCompatActivity {
         detectButton = findViewById(R.id.detectButton);
         imageView = findViewById(R.id.imageView);
 
-        cameraButton.setOnClickListener(v -> startActivity(new Intent(MainActivity.this, DetectorActivity.class)));
+        cameraButton.setOnClickListener(v -> startActivity(new Intent(MainActivity_yolo8.this, DetectorActivity.class)));
 
         detectButton.setOnClickListener(v -> {
             Handler handler = new Handler();
@@ -59,7 +59,7 @@ public class MainActivity extends AppCompatActivity {
             }).start();
 
         });
-        this.sourceBitmap = Utils.getBitmapFromAsset(MainActivity.this, "test.jpg");
+        this.sourceBitmap = Utils.getBitmapFromAsset(MainActivity_yolo8.this, "test_app2.jpg");
 
         this.cropBitmap = Utils.processBitmap(sourceBitmap, TF_OD_API_INPUT_SIZE);
 
@@ -76,7 +76,7 @@ public class MainActivity extends AppCompatActivity {
 
     private static final Logger LOGGER = new Logger();
 
-    public static final int TF_OD_API_INPUT_SIZE = 460;
+    public static final int TF_OD_API_INPUT_SIZE = 640;
 
     private static final boolean TF_OD_API_IS_QUANTIZED = false;
 
@@ -125,7 +125,7 @@ public class MainActivity extends AppCompatActivity {
 
         try {
             detector =
-                    YoloV5Classifier.create(
+                    YoloV8Classifier.create(
                             getAssets(),
                             TF_OD_API_MODEL_FILE,
                             TF_OD_API_LABELS_FILE,
