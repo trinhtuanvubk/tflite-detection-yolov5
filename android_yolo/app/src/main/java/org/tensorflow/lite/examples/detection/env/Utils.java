@@ -1,6 +1,8 @@
 package org.tensorflow.lite.examples.detection.env;
 
 import android.content.Context;
+import android.graphics.RectF;
+import android.graphics.Rect;
 import android.content.res.AssetFileDescriptor;
 import android.content.res.AssetManager;
 import android.graphics.Bitmap;
@@ -165,6 +167,16 @@ public class Utils {
         final Canvas canvas = new Canvas(croppedBitmap);
         canvas.drawBitmap(source, frameToCropTransformations, null);
 
+        return croppedBitmap;
+    }
+
+    public static Bitmap postcrop_Bitmap(Bitmap source, RectF location){
+
+//        int image_height = source.getHeight();
+//        int image_width = source.getWidth();
+        Rect croppingRect = new Rect();
+        location.roundOut(croppingRect);
+        Bitmap croppedBitmap = Bitmap.createBitmap(source, croppingRect.left, croppingRect.top, croppingRect.width(), croppingRect.height());
         return croppedBitmap;
     }
 

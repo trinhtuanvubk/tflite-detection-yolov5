@@ -22,7 +22,7 @@ import org.tensorflow.lite.examples.detection.customview.OverlayView;
 import org.tensorflow.lite.examples.detection.env.ImageUtils;
 import org.tensorflow.lite.examples.detection.env.Logger;
 import org.tensorflow.lite.examples.detection.env.Utils;
-import org.tensorflow.lite.examples.detection.yolo8.Classifier;
+import org.tensorflow.lite.examples.detection.yolo8.ClassifierV8;
 import org.tensorflow.lite.examples.detection.yolo8.YoloV8Classifier;
 import org.tensorflow.lite.examples.detection.tracking.MultiBoxTracker;
 
@@ -49,7 +49,7 @@ public class MainActivity_yolo8 extends AppCompatActivity {
             Handler handler = new Handler();
 
             new Thread(() -> {
-                final List<Classifier.Recognition> results = detector.recognizeImage(cropBitmap);
+                final List<ClassifierV8.Recognition> results = detector.recognizeImage(cropBitmap);
                 handler.post(new Runnable() {
                     @Override
                     public void run() {
@@ -80,7 +80,7 @@ public class MainActivity_yolo8 extends AppCompatActivity {
 
     private static final boolean TF_OD_API_IS_QUANTIZED = false;
 
-    private static final String TF_OD_API_MODEL_FILE = "yolov8n_float16.tflite";
+    private static final String TF_OD_API_MODEL_FILE = "yolov8n_float32.tflite";
 
     private static final String TF_OD_API_LABELS_FILE = "file:///android_asset/coco.txt";
 
@@ -88,7 +88,7 @@ public class MainActivity_yolo8 extends AppCompatActivity {
     private static final boolean MAINTAIN_ASPECT = true;
     private Integer sensorOrientation = 90;
 
-    private Classifier detector;
+    private ClassifierV8 detector;
 
     private Matrix frameToCropTransform;
     private Matrix cropToFrameTransform;
@@ -142,17 +142,17 @@ public class MainActivity_yolo8 extends AppCompatActivity {
         }
     }
 
-    private void handleResult(Bitmap bitmap, List<Classifier.Recognition> results) {
+    private void handleResult(Bitmap bitmap, List<ClassifierV8.Recognition> results) {
         final Canvas canvas = new Canvas(bitmap);
         final Paint paint = new Paint();
         paint.setColor(Color.RED);
         paint.setStyle(Paint.Style.STROKE);
         paint.setStrokeWidth(2.0f);
 
-        final List<Classifier.Recognition> mappedRecognitions =
-                new LinkedList<Classifier.Recognition>();
+        final List<ClassifierV8.Recognition> mappedRecognitions =
+                new LinkedList<ClassifierV8.Recognition>();
 
-        for (final Classifier.Recognition result : results) {
+        for (final ClassifierV8.Recognition result : results) {
             final RectF location = result.getLocation();
             if (location != null && result.getConfidence() >= MINIMUM_CONFIDENCE_TF_OD_API) {
                 canvas.drawRect(location, paint);

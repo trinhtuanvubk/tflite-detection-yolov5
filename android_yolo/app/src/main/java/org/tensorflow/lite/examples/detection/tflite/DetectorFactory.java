@@ -16,9 +16,9 @@ public class DetectorFactory {
         int[][] masks = new int[][]{{0}};
         int[] anchors = new int[]{0};
 
-        if (modelFilename.equals("yolov5n-int8.tflite")) {
-            labelFilename = "file:///android_asset/coco.txt";
-            isQuantized = true;
+        if (modelFilename.equals("yolov8n_0.5_face_float16.tflite")) {
+            labelFilename = "file:///android_asset/face_classes.txt";
+            isQuantized = false;
             inputSize = 128;
             output_width = new int[]{80, 40, 20};
             masks = new int[][]{{0, 1, 2}, {3, 4, 5}, {6, 7, 8}};
@@ -26,28 +26,18 @@ public class DetectorFactory {
                     10,13, 16,30, 33,23, 30,61, 62,45, 59,119, 116,90, 156,198, 373,326
             };
         }
-        else if (modelFilename.equals("yolov5s-fp16.tflite")) {
-            labelFilename = "file:///android_asset/coco.txt";
+        else if (modelFilename.equals("yolov8n_1.0_face_float16.tflite")) {
+            labelFilename = "file:///android_asset/face_classes.txt";
             isQuantized = false;
-            inputSize = 640;
-            output_width = new int[]{80, 40, 20};
+            inputSize = 128;
+            output_width = new int[]{40, 20, 10};
             masks = new int[][]{{0, 1, 2}, {3, 4, 5}, {6, 7, 8}};
             anchors = new int[]{
                     10,13, 16,30, 33,23, 30,61, 62,45, 59,119, 116,90, 156,198, 373,326
             };
         }
-        else if (modelFilename.equals("yolov8n_float16.tflite")) {
-            labelFilename = "file:///android_asset/coco.txt";
-            isQuantized = false;
-            inputSize = 640;
-            output_width = new int[]{80, 40, 20};
-            masks = new int[][]{{0, 1, 2}, {3, 4, 5}, {6, 7, 8}};
-            anchors = new int[]{
-                    10,13, 16,30, 33,23, 30,61, 62,45, 59,119, 116,90, 156,198, 373,326
-            };
-        }
-        else if (modelFilename.equals("yolov5n-fp16.tflite")) {
-            labelFilename = "file:///android_asset/coco.txt";
+        else if (modelFilename.equals("yolov8n_0.125_face_float16.tflite")) {
+            labelFilename = "file:///android_asset/face_classes.txt";
             isQuantized = false;
             inputSize = 128;
             output_width = new int[]{40, 20, 10};

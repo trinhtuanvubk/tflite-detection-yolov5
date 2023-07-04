@@ -23,7 +23,7 @@ import java.util.List;
 /**
  * Generic interface for interacting with different recognition engines.
  */
-public interface Classifier {
+public interface ClassifierV8 {
     List<Recognition> recognizeImage(Bitmap bitmap);
 
     void enableStatLogging(final boolean debug);

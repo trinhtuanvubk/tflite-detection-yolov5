@@ -65,6 +65,7 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
     private YoloV5Classifier detector;
 
     private long lastProcessingTimeMs;
+    private long lastProcessingTimeMs2;
     private Bitmap rgbFrameBitmap = null;
     private Bitmap croppedBitmap = null;
     private Bitmap cropCopyBitmap = null;
@@ -116,7 +117,7 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
         LOGGER.i("Initializing at size %dx%d", previewWidth, previewHeight);
         rgbFrameBitmap = Bitmap.createBitmap(previewWidth, previewHeight, Config.ARGB_8888);
         croppedBitmap = Bitmap.createBitmap(cropSize, cropSize, Config.ARGB_8888);
-
+        LOGGER.i("croppedBitmap", croppedBitmap);
         frameToCropTransform =
                 ImageUtils.getTransformationMatrix(
                         previewWidth, previewHeight,
@@ -243,9 +244,10 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                     public void run() {
                         LOGGER.i("Running detection on image " + currTimestamp);
                         final long startTime = SystemClock.uptimeMillis();
+
                         final List<Classifier.Recognition> results = detector.recognizeImage(croppedBitmap);
                         lastProcessingTimeMs = SystemClock.uptimeMillis() - startTime;
-
+                        final long startTime2 = SystemClock.uptimeMillis();
                         Log.e("CHECK", "run: " + results.size());
 
                         cropCopyBitmap = Bitmap.createBitmap(croppedBitmap);
@@ -281,14 +283,14 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                         trackingOverlay.postInvalidate();
 
                         computingDetection = false;
-
+                        lastProcessingTimeMs2 = SystemClock.uptimeMillis() - startTime2;
                         runOnUiThread(
                                 new Runnable() {
                                     @Override
                                     public void run() {
                                         showFrameInfo(previewWidth + "x" + previewHeight);
                                         showCropInfo(cropCopyBitmap.getWidth() + "x" + cropCopyBitmap.getHeight());
-                                        showInference(lastProcessingTimeMs + "ms");
+                                        showInference(lastProcessingTimeMs + "ms" + " " + lastProcessingTimeMs2 + "ms");
                                     }
                                 });
                     }

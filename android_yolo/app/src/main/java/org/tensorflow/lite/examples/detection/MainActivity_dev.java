@@ -22,8 +22,6 @@ import android.widget.ImageView;
 import android.widget.PopupMenu;
 import android.widget.Toast;
 
-import android.net.Uri;
-
 import androidx.appcompat.app.AppCompatActivity;
 
 import org.tensorflow.lite.examples.detection.customview.OverlayView;

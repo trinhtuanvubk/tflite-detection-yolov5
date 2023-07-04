@@ -54,7 +54,7 @@ import java.util.Vector;
  * - https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/detection_model_zoo.md
  * - https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/running_on_mobile_tensorflowlite.md#running-our-model-on-android
  */
-public class YoloV8Classifier implements Classifier {
+public class YoloV8Classifier implements ClassifierV8 {
 
     /**
      * Initializes a native TensorFlow session for classifying images.
@@ -131,8 +131,8 @@ public class YoloV8Classifier implements Classifier {
 //        d.imgFloat.order(FloatBuffer.na);
         d.intValues = new int[d.INPUT_SIZE * d.INPUT_SIZE];
 
-//        d.output_box = (int) ((Math.pow((inputSize / 32), 2) + Math.pow((inputSize / 16), 2) + Math.pow((inputSize / 8), 2)) * 3);
-        d.output_box = 8400;
+        d.output_box = (int) ((Math.pow((inputSize / 32), 2) + Math.pow((inputSize / 16), 2) + Math.pow((inputSize / 8), 2)));
+//        d.output_box = 8400;
 //        d.OUTPUT_WIDTH = output_width;
 //        d.MASKS = masks;
 //        d.ANCHORS = anchors;
@@ -418,9 +418,9 @@ public class YoloV8Classifier implements Classifier {
                 }
             }
             // Denormalize xywh
-            for (int j = 0; j < 4; ++j) {
-                out[0][j][i] *= getInputSize();
-            }
+//            for (int j = 0; j < 4; ++j) {
+//                out[0][j][i] *= getInputSize();
+//            }
         }
         for (int i = 0; i < output_box; ++i){
             final int offset = 0;
