@@ -224,7 +224,7 @@ public class YoloV5Classifier implements Classifier {
     //config yolo
     private int INPUT_SIZE = -1;
 
-//    private int[] OUTPUT_WIDTH;
+    //    private int[] OUTPUT_WIDTH;
 //    private int[][] MASKS;
 //    private int[] ANCHORS;
     private  int output_box;
@@ -258,8 +258,6 @@ public class YoloV5Classifier implements Classifier {
     private int[] intValues;
 
     private ByteBuffer imgData;
-
-    private ByteBuffer postcropData;
     private ByteBuffer outData;
 
     private Interpreter tfLite;
@@ -353,10 +351,10 @@ public class YoloV5Classifier implements Classifier {
     /**
      * Writes Image data into a {@code ByteBuffer}.
      */
-    protected ByteBuffer convertBitmapToByteBuffer(Bitmap bitmap, int INPUT_SIZE) {
-//        ByteBuffer byteBuffer = ByteBuffer.allocateDirect(4 * BATCH_SIZE * INPUT_SIZE * INPUT_SIZE * PIXEL_SIZE);
-//        byteBuffer.order(ByteOrder.nativeOrder());
-//        int[] intValues = new int[INPUT_SIZE * INPUT_SIZE];
+    protected ByteBuffer convertBitmapToByteBuffer(Bitmap bitmap) {
+        ByteBuffer byteBuffer = ByteBuffer.allocateDirect(4 * BATCH_SIZE * INPUT_SIZE * INPUT_SIZE * PIXEL_SIZE);
+        byteBuffer.order(ByteOrder.nativeOrder());
+        int[] intValues = new int[INPUT_SIZE * INPUT_SIZE];
         bitmap.getPixels(intValues, 0, bitmap.getWidth(), 0, 0, bitmap.getWidth(), bitmap.getHeight());
         int pixel = 0;
 
@@ -378,9 +376,8 @@ public class YoloV5Classifier implements Classifier {
         }
         return imgData;
     }
-
     public ArrayList<Recognition> recognizeImage(Bitmap bitmap) {
-        ByteBuffer byteBuffer_ = convertBitmapToByteBuffer(bitmap, 128);
+        ByteBuffer byteBuffer_ = convertBitmapToByteBuffer(bitmap);
 
         Map<Integer, Object> outputMap = new HashMap<>();
 
@@ -455,15 +452,16 @@ public class YoloV5Classifier implements Classifier {
         Log.d("YoloV5Classifier", "detect end");
         final ArrayList<Recognition> recognitions = nms(detections);
 //        final ArrayList<Recognition> recognitions = detections;
-        for (int i=0; i<recognitions.size(); i++) {
-            Bitmap post_cropbitmap = Utils.postcrop_Bitmap(bitmap, recognitions.get(i).getLocation());
-            ByteBuffer post_bytebuffer = convertBitmapToByteBuffer(post_cropbitmap, 96);
-
-        }
-
         return recognitions;
     }
 
+    public ArrayList<recClsOutput> recClsImage(Bitmap bitmap) {
+        final ArrayList<recClsOutput>  output = new ArrayList<recClsOutput>();
+        RectF rectf =  new RectF(200,400,200,400);
+        output.add(new recClsOutput("", "", "",
+                0f, rectf, -1, -1));
+        return output;
+    }
     public boolean checkInvalidateBox(float x, float y, float width, float height, float oriW, float oriH, int intputSize) {
         // (1) (x, y, w, h) --> (xmin, ymin, xmax, ymax)
         float halfHeight = height / 2.0f;

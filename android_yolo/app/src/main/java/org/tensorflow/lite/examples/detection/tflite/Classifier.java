@@ -18,6 +18,8 @@ package org.tensorflow.lite.examples.detection.tflite;
 import android.graphics.Bitmap;
 import android.graphics.RectF;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.List;
 
 /**
@@ -25,7 +27,8 @@ import java.util.List;
  */
 public interface Classifier {
     List<Recognition> recognizeImage(Bitmap bitmap);
-
+//
+    List<recClsOutput> recClsImage(Bitmap bitmap) throws IOException;
     void enableStatLogging(final boolean debug);
 
     String getStatString();
@@ -117,6 +120,111 @@ public interface Classifier {
             }
 
             if (title != null) {
+                resultString += title + " ";
+            }
+
+            if (confidence != null) {
+                resultString += String.format("(%.1f%%) ", confidence * 100.0f);
+            }
+
+            if (location != null) {
+                resultString += location + " ";
+            }
+
+            return resultString.trim();
+        }
+    }
+
+    public class recClsOutput{
+        /**
+         * A unique identifier for what has been recognized. Specific to the class, not the instance of
+         * the object.
+         */
+        private final String id;
+
+        /**
+         * Display name for the recognition.
+         */
+        private final String title;
+
+        private final String clsTitle;
+
+        /**
+         * A sortable score for how good the recognition is relative to others. Higher should be better.
+         */
+        private final Float confidence;
+
+        /**
+         * Optional location within the source image for the location of the recognized object.
+         */
+        private RectF location;
+
+        private int detectedClass;
+
+        private int clsClass;
+
+        public recClsOutput(final String id, final String title, final String clsTitle, final Float confidence, final RectF location, int detectedClass, int clsClass) {
+            this.id = id;
+            this.title = title;
+            this.clsTitle = clsTitle;
+            this.confidence = confidence;
+            this.location = location;
+            this.detectedClass = detectedClass;
+            this.clsClass = clsClass;
+        }
+
+        public String getId() {
+            return id;
+        }
+
+        public String getTitle() {
+            return title;
+        }
+
+        public String getClsTitle() {
+            return clsTitle;
+        }
+
+        public Float getConfidence() {
+            return confidence;
+        }
+
+        public RectF getLocation() {
+            return new RectF(location);
+        }
+
+        public void setLocation(RectF location) {
+            this.location = location;
+        }
+
+        public int getDetectedClass() {
+            return detectedClass;
+        }
+
+        public void setDetectedClass(int detectedClass) {
+            this.detectedClass = detectedClass;
+        }
+
+        public int getClsClass() {
+            return clsClass;
+        }
+
+        public void setClsClass(int clsClass) {
+            this.clsClass = clsClass;
+        }
+
+        @Override
+        public String toString() {
+            String resultString = "";
+            if (id != null) {
+                resultString += "[" + id + "] ";
+            }
+
+            if (title != null) {
+                resultString += title + " ";
+            }
+
+            if (clsTitle != null) {
                 resultString += title + " ";
             }
 

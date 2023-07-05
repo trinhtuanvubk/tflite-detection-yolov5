@@ -19,6 +19,7 @@ import android.content.res.AssetManager;
 import android.graphics.Bitmap;
 import android.graphics.RectF;
 import android.os.Build;
+import android.os.Environment;
 import android.util.Log;
 
 import org.tensorflow.lite.Interpreter;
@@ -30,6 +31,10 @@ import org.tensorflow.lite.gpu.GpuDelegate;
 import org.tensorflow.lite.nnapi.NnApiDelegate;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -143,6 +148,11 @@ public class YoloV5Combine implements Classifier {
         d.imgData.order(ByteOrder.nativeOrder());
         d.intValues = new int[d.INPUT_SIZE * d.INPUT_SIZE];
 
+        d.CLS_INPUT_SIZE = 96;
+        d.postimgData = ByteBuffer.allocateDirect(1 * d.CLS_INPUT_SIZE * d.CLS_INPUT_SIZE * 3 * numBytesPerChannel);
+        d.postimgData.order(ByteOrder.nativeOrder());
+        d.postintValues = new int[d.CLS_INPUT_SIZE * d.CLS_INPUT_SIZE];
+
         d.output_box = (int) ((Math.pow((inputSize / 32), 2) + Math.pow((inputSize / 16), 2) + Math.pow((inputSize / 8), 2)));
 //        d.OUTPUT_WIDTH = output_width;
 //        d.MASKS = masks;
@@ -246,6 +256,8 @@ public class YoloV5Combine implements Classifier {
     //config yolo
     private int INPUT_SIZE = -1;
 
+    private int CLS_INPUT_SIZE = -1;
+
     //    private int[] OUTPUT_WIDTH;
 //    private int[][] MASKS;
 //    private int[] ANCHORS;
@@ -282,6 +294,8 @@ public class YoloV5Combine implements Classifier {
     private Vector<String> labels = new Vector<String>();
     private Vector<String> clslabels = new Vector<String>();
     private int[] intValues;
+
+    private int[] postintValues;
 
     private ByteBuffer imgData;
 
@@ -389,11 +403,20 @@ public class YoloV5Combine implements Classifier {
 //        int[] intValues = new int[INPUT_SIZE * INPUT_SIZE];
         bitmap.getPixels(intValues, 0, bitmap.getWidth(), 0, 0, bitmap.getWidth(), bitmap.getHeight());
         int pixel = 0;
+        int pad_width = INPUT_SIZE - bitmap.getWidth();
+        int pad_height = INPUT_SIZE - bitmap.getHeight();
 
         imgData.rewind();
         for (int i = 0; i < INPUT_SIZE; ++i) {
             for (int j = 0; j < INPUT_SIZE; ++j) {
-                int pixelValue = intValues[i * INPUT_SIZE + j];
+                int pixelValue;
+                if ((i < pad_height/2 || i > (INPUT_SIZE-pad_height/2) && pad_width==0) || (i < pad_width/2 || i > (INPUT_SIZE-pad_width/2) && pad_height==0)) {
+                    pixelValue = 125;
+                }
+                else {
+                    pixelValue = intValues[i * INPUT_SIZE + j];
+                }
+
                 if (isModelQuantized) {
                     // Quantized model
                     imgData.put((byte) ((((pixelValue >> 16) & 0xFF) - IMAGE_MEAN) / IMAGE_STD / inp_scale + inp_zero_point));
@@ -409,8 +432,42 @@ public class YoloV5Combine implements Classifier {
         return imgData;
     }
 
+    protected ByteBuffer convertPostBitmapToByteBuffer(Bitmap bitmap, int INPUT_SIZE) {
+
+        bitmap.getPixels(postintValues, 0, bitmap.getWidth(), 0, 0, bitmap.getWidth(), bitmap.getHeight());
+        int pixel = 0;
+        int pad_width = INPUT_SIZE - bitmap.getWidth();
+        int pad_height = INPUT_SIZE - bitmap.getHeight();
+
+        postimgData.rewind();
+        for (int i = 0; i < INPUT_SIZE; ++i) {
+            for (int j = 0; j < INPUT_SIZE; ++j) {
+                int pixelValue;
+                if ((i < pad_height/2 || i > (INPUT_SIZE-pad_height/2) && pad_width==0) || (i < pad_width/2 || i > (INPUT_SIZE-pad_width/2) && pad_height==0)) {
+                    pixelValue = 125;
+                }
+                else {
+                    pixelValue = postintValues[i * INPUT_SIZE + j];
+                }
+
+
+                if (isModelQuantized) {
+                    // Quantized model
+                    postimgData.put((byte) ((((pixelValue >> 16) & 0xFF) - IMAGE_MEAN) / IMAGE_STD / inp_scale + inp_zero_point));
+                    postimgData.put((byte) ((((pixelValue >> 8) & 0xFF) - IMAGE_MEAN) / IMAGE_STD / inp_scale + inp_zero_point));
+                    postimgData.put((byte) (((pixelValue & 0xFF) - IMAGE_MEAN) / IMAGE_STD / inp_scale + inp_zero_point));
+                } else { // Float model
+                    postimgData.putFloat((((pixelValue >> 16) & 0xFF) - IMAGE_MEAN) / IMAGE_STD);
+                    postimgData.putFloat((((pixelValue >> 8) & 0xFF) - IMAGE_MEAN) / IMAGE_STD);
+                    postimgData.putFloat(((pixelValue & 0xFF) - IMAGE_MEAN) / IMAGE_STD);
+                }
+            }
+        }
+        return postimgData;
+    }
+
     public ArrayList<Recognition> recognizeImage(Bitmap bitmap) {
-        ByteBuffer byteBuffer_ = convertBitmapToByteBuffer(bitmap, 128);
+//        ByteBuffer byteBuffer_ = convertBitmapToByteBuffer(bitmap);
 
         Map<Integer, Object> outputMap = new HashMap<>();
 
@@ -485,13 +542,148 @@ public class YoloV5Combine implements Classifier {
         Log.d("YoloV5Classifier", "detect end");
         final ArrayList<Recognition> recognitions = nms(detections);
 //        final ArrayList<Recognition> recognitions = detections;
-        for (int i=0; i<recognitions.size(); i++) {
-            Bitmap post_cropbitmap = Utils.postcrop_Bitmap(bitmap, recognitions.get(i).getLocation());
-            ByteBuffer post_bytebuffer = convertBitmapToByteBuffer(post_cropbitmap, 96);
+        return recognitions;
+    }
 
+    public ArrayList<recClsOutput> recClsImage(Bitmap bitmap) throws IOException {
+        ByteBuffer byteBuffer_ = convertBitmapToByteBuffer(bitmap, 128);
+//        saving bitmap
+//        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+//        bitmap.compress(Bitmap.CompressFormat.JPEG, 60, bytes);
+//        File f = new File(Environment.getExternalStorageDirectory()
+//                + File.separator + "testbitmap.jpg");
+//        f.createNewFile();
+//        FileOutputStream fo = new FileOutputStream(f);
+//        fo.write(bytes.toByteArray());
+//        fo.close();
+
+        Map<Integer, Object> outputMap = new HashMap<>();
+
+//        float[][][] outbuf = new float[1][output_box][labels.size() + 5];
+        outData.rewind();
+        outputMap.put(0, outData);
+        Log.d("YoloV5Classifier", "mObjThresh: " + getObjThresh());
+
+        Object[] inputArray = {imgData};
+        tfLite.runForMultipleInputsOutputs(inputArray, outputMap);
+
+        ByteBuffer byteBuffer = (ByteBuffer) outputMap.get(0);
+        byteBuffer.rewind();
+
+        ArrayList<Recognition> detections = new ArrayList<Recognition>();
+
+        float[][][] out = new float[1][output_box][numClass + 4];
+        Log.d("YoloV5Classifier", "out[0] detect start");
+        for (int i = 0; i < output_box; ++i) {
+            for (int j = 0; j < numClass + 4; ++j) {
+                if (isModelQuantized){
+                    out[0][j][i] = oup_scale * (((int) byteBuffer.get() & 0xFF) - oup_zero_point);
+                }
+                else {
+                    out[0][j][i] = byteBuffer.getFloat();
+                }
+            }
+            // Denormalize xywh
+//            for (int j = 0; j < 4; ++j) {
+//                out[0][i][j] *= getInputSize();
+//            }
+        }
+        for (int i = 0; i < output_box; ++i){
+            final int offset = 0;
+//            final float confidence = out[0][i][4];
+            int detectedClass = -1;
+            float maxClass = 0;
+
+            final float[] classes = new float[labels.size()];
+            for (int c = 0; c < labels.size(); ++c) {
+                classes[c] = out[0][i][4 + c];
+            }
+
+            for (int c = 0; c < labels.size(); ++c) {
+                if (classes[c] > maxClass) {
+                    detectedClass = c;
+                    maxClass = classes[c];
+                }
+            }
+
+            final float confidenceInClass = maxClass;
+            if (confidenceInClass > getObjThresh()) {
+                final float xPos = out[0][i][0];
+                final float yPos = out[0][i][1];
+
+                final float w = out[0][i][2];
+                final float h = out[0][i][3];
+                Log.d("YoloV5Classifier",
+                        Float.toString(xPos) + ',' + yPos + ',' + w + ',' + h);
+
+                final RectF rect =
+                        new RectF(
+                                Math.max(0, xPos - w / 2),
+                                Math.max(0, yPos - h / 2),
+                                Math.min(bitmap.getWidth() - 1, xPos + w / 2),
+                                Math.min(bitmap.getHeight() - 1, yPos + h / 2));
+                detections.add(new Recognition("" + offset, labels.get(detectedClass),
+                        confidenceInClass, rect, detectedClass));
+            }
         }
 
-        return recognitions;
+        Log.d("YoloV5Classifier", "detect end");
+        final ArrayList<Recognition> recognitions = nms(detections);
+//        final ArrayList<Recognition> recognitions = detections;
+        final ArrayList<recClsOutput>  output = new ArrayList<recClsOutput>();
+        for (int i=0; i<recognitions.size(); i++) {
+            String id = recognitions.get(i).getId();
+            String title = recognitions.get(i).getTitle();
+            Float conf = recognitions.get(i).getConfidence();
+            RectF location = recognitions.get(i).getLocation();
+            int detectedClass = recognitions.get(i).getDetectedClass();
+
+
+            Bitmap post_cropbitmap = Utils.postcrop_Bitmap(bitmap, recognitions.get(i).getLocation());
+
+            ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+            post_cropbitmap.compress(Bitmap.CompressFormat.JPEG, 60, bytes);
+            File f = new File(Environment.getExternalStorageDirectory()
+                    + File.separator + "testbitmap.jpg");
+            f.createNewFile();
+            FileOutputStream fo = new FileOutputStream(f);
+            fo.write(bytes.toByteArray());
+            fo.close();
+
+            Bitmap post_resize_bitmap = Utils.processBitmap(post_cropbitmap, 96);
+//            ByteBuffer post_bytebuffer = convertPostBitmapToByteBuffer(post_cropbitmap, 96);
+            ByteBuffer post_bytebuffer = convertPostBitmapToByteBuffer(post_resize_bitmap, 96);
+            Map<Integer, Object> clsoutputMap = new HashMap<>();
+
+            clsoutData.rewind();
+            clsoutputMap.put(0, clsoutData);
+            Object[] clsinputArray = {postimgData};
+
+            clstfLite.runForMultipleInputsOutputs(clsinputArray, clsoutputMap);
+
+            ByteBuffer postbyteBuffer = (ByteBuffer) clsoutputMap.get(0);
+            postbyteBuffer.rewind();
+//            final ArrayList<recClsOutput>  output = new ArrayList<recClsOutput>();
+
+            final float[] clsclasses = new float[clslabels.size()];
+            int detectedClsClass = -1;
+            float maxClsClass = 0;
+            for(int j = 0; j < clslabels.size(); j++) {
+                clsclasses[j] = postbyteBuffer.getFloat();
+            }
+
+            for (int c = 0; c < clslabels.size(); ++c) {
+                if (clsclasses[c] > maxClsClass) {
+                    detectedClsClass = c;
+                    maxClsClass = clsclasses[c];
+                }
+            }
+
+            output.add(new recClsOutput("", title, clslabels.get(detectedClsClass),
+                    conf, location, detectedClass, detectedClsClass));
+
+        }
+        return output;
     }
 
     public boolean checkInvalidateBox(float x, float y, float width, float height, float oriW, float oriH, int intputSize) {
@@ -545,4 +737,5 @@ public class YoloV5Combine implements Classifier {
 
         return true;
     }
+
 }

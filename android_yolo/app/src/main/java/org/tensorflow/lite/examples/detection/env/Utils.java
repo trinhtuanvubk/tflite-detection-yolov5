@@ -22,7 +22,7 @@ import java.io.InputStream;
 import java.io.OutputStreamWriter;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
-
+import java.lang.Math;
 public class Utils {
 
     /**
@@ -157,10 +157,23 @@ public class Utils {
 
         int image_height = source.getHeight();
         int image_width = source.getWidth();
+        int new_width;
+        int new_height;
+        float ratio1 = (float) size / image_height;
+        float ratio2 = (float) size / image_width;
 
-        Bitmap croppedBitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
+        if (ratio1 < ratio2) {
+            new_height = size;
+            new_width = (int) (ratio1 * image_width);
+        }
+        else {
+            new_height = (int) (ratio2 * image_height);
+            new_width = size;
+        }
 
-        Matrix frameToCropTransformations = getTransformationMatrix(image_width,image_height,size,size,0,false);
+        Bitmap croppedBitmap = Bitmap.createBitmap(new_width, new_height, Bitmap.Config.ARGB_8888);
+
+        Matrix frameToCropTransformations = getTransformationMatrix(image_width,image_height,new_width,new_height,0,false);
         Matrix cropToFrameTransformations = new Matrix();
         frameToCropTransformations.invert(cropToFrameTransformations);
 

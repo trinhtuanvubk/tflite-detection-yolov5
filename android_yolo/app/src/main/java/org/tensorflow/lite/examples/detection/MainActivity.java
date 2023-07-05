@@ -24,6 +24,7 @@ import org.tensorflow.lite.examples.detection.env.Logger;
 import org.tensorflow.lite.examples.detection.env.Utils;
 import org.tensorflow.lite.examples.detection.tflite.Classifier;
 import org.tensorflow.lite.examples.detection.tflite.YoloV5Classifier;
+import org.tensorflow.lite.examples.detection.tflite.YoloV5Combine;
 import org.tensorflow.lite.examples.detection.tracking.MultiBoxTracker;
 
 import java.io.IOException;
@@ -49,7 +50,13 @@ public class MainActivity extends AppCompatActivity {
             Handler handler = new Handler();
 
             new Thread(() -> {
-                final List<Classifier.Recognition> results = detector.recognizeImage(cropBitmap);
+//                final List<Classifier.Recognition> results = detector.recognizeImage(cropBitmap);
+                final List<Classifier.recClsOutput> results;
+                try {
+                    results = detector.recClsImage(cropBitmap);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
                 handler.post(new Runnable() {
                     @Override
                     public void run() {
@@ -59,7 +66,7 @@ public class MainActivity extends AppCompatActivity {
             }).start();
 
         });
-        this.sourceBitmap = Utils.getBitmapFromAsset(MainActivity.this, "face_test.jpg");
+        this.sourceBitmap = Utils.getBitmapFromAsset(MainActivity.this, "masknomask.jpeg");
 
         this.cropBitmap = Utils.processBitmap(sourceBitmap, TF_OD_API_INPUT_SIZE);
 
@@ -83,6 +90,12 @@ public class MainActivity extends AppCompatActivity {
     private static final String TF_OD_API_MODEL_FILE = "yolov8n_0.5_face_float16.tflite";
 
     private static final String TF_OD_API_LABELS_FILE = "file:///android_asset/face_classes.txt";
+
+//    private static final String TF_CLS_API_MODEL_FILE = "yolov8n-cls_float16.tflite";
+    private static final String TF_CLS_API_MODEL_FILE = "mask_float16.tflite";
+
+//    private static final String TF_CLS_API_LABELS_FILE = "file:///android_asset/imagenet.txt";
+    private static final String TF_CLS_API_LABELS_FILE = "file:///android_asset/facemask.txt";
 
     // Minimum detection confidence to track a detection.
     private static final boolean MAINTAIN_ASPECT = true;
@@ -125,12 +138,14 @@ public class MainActivity extends AppCompatActivity {
 
         try {
             detector =
-                    YoloV5Classifier.create(
+                    YoloV5Combine.create(
                             getAssets(),
                             TF_OD_API_MODEL_FILE,
                             TF_OD_API_LABELS_FILE,
                             TF_OD_API_IS_QUANTIZED,
-                            TF_OD_API_INPUT_SIZE);
+                            TF_OD_API_INPUT_SIZE,
+                            TF_CLS_API_MODEL_FILE,
+                            TF_CLS_API_LABELS_FILE);
         } catch (final IOException e) {
             e.printStackTrace();
             LOGGER.e(e, "Exception initializing classifier!");
@@ -142,26 +157,43 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void handleResult(Bitmap bitmap, List<Classifier.Recognition> results) {
+//    private void handleResult(Bitmap bitmap, List<Classifier.Recognition> results) {
+//        final Canvas canvas = new Canvas(bitmap);
+//        final Paint paint = new Paint();
+//        paint.setColor(Color.RED);
+//        paint.setStyle(Paint.Style.STROKE);
+//        paint.setStrokeWidth(2.0f);
+//
+//        final List<Classifier.Recognition> mappedRecognitions =
+//                new LinkedList<Classifier.Recognition>();
+//
+//        for (final Classifier.Recognition result : results) {
+//            final RectF location = result.getLocation();
+//            if (location != null && result.getConfidence() >= MINIMUM_CONFIDENCE_TF_OD_API) {
+//                canvas.drawRect(location, paint);
+//            }
+//        }
+//
+////        tracker.trackResults(mappedRecognitions, new Random().nextInt());
+////        trackingOverlay.postInvalidate();
+//        imageView.setImageBitmap(bitmap);
+//    }
+
+    private void handleResult(Bitmap bitmap, List<Classifier.recClsOutput> results) {
         final Canvas canvas = new Canvas(bitmap);
         final Paint paint = new Paint();
         paint.setColor(Color.RED);
         paint.setStyle(Paint.Style.STROKE);
         paint.setStrokeWidth(2.0f);
 
-        final List<Classifier.Recognition> mappedRecognitions =
-                new LinkedList<Classifier.Recognition>();
 
-        for (final Classifier.Recognition result : results) {
+        for (final Classifier.recClsOutput result : results) {
             final RectF location = result.getLocation();
             if (location != null && result.getConfidence() >= MINIMUM_CONFIDENCE_TF_OD_API) {
                 canvas.drawRect(location, paint);
-//                cropToFrameTransform.mapRect(location);
-//
-//                result.setLocation(location);
-//                mappedRecognitions.add(result);
             }
         }
+
 //        tracker.trackResults(mappedRecognitions, new Random().nextInt());
 //        trackingOverlay.postInvalidate();
         imageView.setImageBitmap(bitmap);
