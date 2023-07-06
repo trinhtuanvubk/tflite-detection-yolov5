@@ -32,8 +32,6 @@ import org.tensorflow.lite.nnapi.NnApiDelegate;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -432,7 +430,7 @@ public class YoloV5Combine implements Classifier {
         return imgData;
     }
 
-    protected ByteBuffer convertPostBitmapToByteBuffer(Bitmap bitmap, int INPUT_SIZE) {
+    protected ByteBuffer convertPostBitmapToByteBuffer(Bitmap bitmap, int post_size) {
 
         bitmap.getPixels(postIntValues, 0, bitmap.getWidth(), 0, 0, bitmap.getWidth(), bitmap.getHeight());
         int pixel = 0;
@@ -440,8 +438,8 @@ public class YoloV5Combine implements Classifier {
 //        int pad_height = INPUT_SIZE - bitmap.getHeight();
 
         postImgData.rewind();
-        for (int i = 0; i < INPUT_SIZE; ++i) {
-            for (int j = 0; j < INPUT_SIZE; ++j) {
+        for (int i = 0; i < post_size; ++i) {
+            for (int j = 0; j < post_size; ++j) {
 //                int pixelValue;
 //                if (((i < pad_height/2 || i > (INPUT_SIZE-pad_height/2)) && pad_width==0) || ((j < pad_width/2 || j > (INPUT_SIZE-pad_width/2)) && pad_height==0)) {
 //                    pixelValue = 114;
@@ -450,7 +448,7 @@ public class YoloV5Combine implements Classifier {
 ////                    pixelValue = postintValues[i * INPUT_SIZE + j];
 //                    pixelValue = postintValues[(i-pad_height/2) * INPUT_SIZE + j - pad_width/2];
 //                }
-                int pixelValue = postIntValues[i * INPUT_SIZE + j];
+                int pixelValue = postIntValues[i * post_size + j];
 
 
                 if (isModelQuantized) {
@@ -547,7 +545,7 @@ public class YoloV5Combine implements Classifier {
         return recognitions;
     }
 
-    public ArrayList<recClsOutput> recClsImage(Bitmap bitmap) throws IOException {
+    public ArrayList<recClsOutput> recClsImage(Bitmap bitmap) {
         ByteBuffer byteBuffer_ = convertBitmapToByteBuffer(bitmap, 128);
 //        saving bitmap
 //        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
@@ -645,12 +643,12 @@ public class YoloV5Combine implements Classifier {
 
             ByteArrayOutputStream bytes = new ByteArrayOutputStream();
             post_cropbitmap.compress(Bitmap.CompressFormat.JPEG, 60, bytes);
-            File f = new File(Environment.getExternalStorageDirectory()
-                    + File.separator + "testbitmap.jpg");
-            f.createNewFile();
-            FileOutputStream fo = new FileOutputStream(f);
-            fo.write(bytes.toByteArray());
-            fo.close();
+//            File f = new File(Environment.getExternalStorageDirectory()
+//                    + File.separator + "testbitmap.jpg");
+//            f.createNewFile();
+//            FileOutputStream fo = new FileOutputStream(f);
+//            fo.write(bytes.toByteArray());
+//            fo.close();
 
             Bitmap post_resize_bitmap = Utils.processBitmap(post_cropbitmap, 96);
 //            ByteBuffer post_bytebuffer = convertPostBitmapToByteBuffer(post_cropbitmap, 96);
@@ -674,15 +672,17 @@ public class YoloV5Combine implements Classifier {
                 clsclasses[j] = postbyteBuffer.getFloat();
             }
 
+            float[] softmaxClsClasses = Utils.softmax(clsclasses);
+
             for (int c = 0; c < clsLabels.size(); ++c) {
-                if (clsclasses[c] > maxClsClass) {
+                if (softmaxClsClasses[c] > maxClsClass) {
                     detectedClsClass = c;
-                    maxClsClass = clsclasses[c];
+                    maxClsClass = softmaxClsClasses[c];
                 }
             }
-
+            final float clsConfidenceInClass = maxClsClass;
             allResults.add(new recClsOutput("", title, clsLabels.get(detectedClsClass),
-                    conf, location, detectedClass, detectedClsClass));
+                    conf, clsConfidenceInClass, location, detectedClass, detectedClsClass));
 
         }
         return allResults;

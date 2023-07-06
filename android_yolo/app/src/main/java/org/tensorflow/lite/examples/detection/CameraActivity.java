@@ -566,6 +566,7 @@ public abstract class CameraActivity extends AppCompatActivity
         return 90;
       default:
         return 0;
+//    return 0;
     }
   }
 

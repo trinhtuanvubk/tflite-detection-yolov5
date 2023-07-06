@@ -13,17 +13,15 @@ import android.graphics.Matrix;
 import android.os.Environment;
 import android.util.Log;
 
-import org.tensorflow.lite.examples.detection.MainActivity;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStreamWriter;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.lang.Math;
+
 public class Utils {
 
     /**
@@ -39,7 +37,7 @@ public class Utils {
         return fileChannel.map(FileChannel.MapMode.READ_ONLY, startOffset, declaredLength);
     }
 
-    public static void softmax(final float[] vals) {
+    public static float[] softmax(float[] vals) {
         float max = Float.NEGATIVE_INFINITY;
         for (final float val : vals) {
             max = Math.max(max, val);
@@ -52,6 +50,7 @@ public class Utils {
         for (int i = 0; i < vals.length; ++i) {
             vals[i] = vals[i] / sum;
         }
+        return vals;
     }
 
     public static float expit(final float x) {
@@ -199,6 +198,7 @@ public class Utils {
         // Resize ảnh
         Matrix matrix = new Matrix();
         matrix.postScale(scale, scale);
+//        matrix.postRotate(270);
         Bitmap resizedBitmap = Bitmap.createBitmap(source, 0, 0, width, height, matrix, false);
 
         Bitmap paddedBitmap = Bitmap.createBitmap(targetSize, targetSize, Bitmap.Config.ARGB_8888);
@@ -208,6 +208,24 @@ public class Utils {
         int top = (targetSize - newHeight) / 2;
         canvas.drawBitmap(resizedBitmap, left, top, null);
         return paddedBitmap;
+    }
+
+    public static int[] getPadShape(Bitmap source, int targetSize) {
+
+        int width = source.getWidth();
+        int height = source.getHeight();
+        float scale;
+        if (width >= height) {
+            scale = (float) targetSize / width;
+        } else {
+            scale = (float) targetSize / height;
+        }
+        int newWidth = (int) (scale * width);
+        int newHeight = (int) (scale * height);
+        int left = (targetSize - newWidth) / 2;
+        int top = (targetSize - newHeight) / 2;
+        int[] result = {left,top};
+        return result ;
     }
 
     public static Bitmap postcrop_Bitmap(Bitmap source, RectF location){

@@ -23,12 +23,10 @@ import org.tensorflow.lite.examples.detection.env.ImageUtils;
 import org.tensorflow.lite.examples.detection.env.Logger;
 import org.tensorflow.lite.examples.detection.env.Utils;
 import org.tensorflow.lite.examples.detection.tflite.Classifier;
-import org.tensorflow.lite.examples.detection.tflite.YoloV5Classifier;
 import org.tensorflow.lite.examples.detection.tflite.YoloV5Combine;
 import org.tensorflow.lite.examples.detection.tracking.MultiBoxTracker;
 
 import java.io.IOException;
-import java.util.LinkedList;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
@@ -52,11 +50,9 @@ public class MainActivity extends AppCompatActivity {
             new Thread(() -> {
 //                final List<Classifier.Recognition> results = detector.recognizeImage(cropBitmap);
                 final List<Classifier.recClsOutput> results;
-                try {
-                    results = detector.recClsImage(cropBitmap);
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
+
+                results = detector.recClsImage(cropBitmap);
+
                 handler.post(new Runnable() {
                     @Override
                     public void run() {
@@ -66,7 +62,7 @@ public class MainActivity extends AppCompatActivity {
             }).start();
 
         });
-        this.sourceBitmap = Utils.getBitmapFromAsset(MainActivity.this, "masknomask.jpeg");
+        this.sourceBitmap = Utils.getBitmapFromAsset(MainActivity.this, "face_test.jpg");
 
         this.cropBitmap = Utils.processBitmap(sourceBitmap, TF_OD_API_INPUT_SIZE);
 
@@ -87,7 +83,7 @@ public class MainActivity extends AppCompatActivity {
 
     private static final boolean TF_OD_API_IS_QUANTIZED = false;
 
-    private static final String TF_OD_API_MODEL_FILE = "yolov8n_0.5_face_float16.tflite";
+    private static final String TF_OD_API_MODEL_FILE = "a_yolov8n_0.5_face_float16.tflite";
 
     private static final String TF_OD_API_LABELS_FILE = "file:///android_asset/face_classes.txt";
 

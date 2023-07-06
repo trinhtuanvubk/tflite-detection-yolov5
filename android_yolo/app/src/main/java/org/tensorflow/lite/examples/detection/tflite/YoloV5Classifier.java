@@ -458,7 +458,7 @@ public class YoloV5Classifier implements Classifier {
     public ArrayList<recClsOutput> recClsImage(Bitmap bitmap) {
         final ArrayList<recClsOutput>  output = new ArrayList<recClsOutput>();
         RectF rectf =  new RectF(200,400,200,400);
-        output.add(new recClsOutput("", "", "",
+        output.add(new recClsOutput("", "", "", 0f,
                 0f, rectf, -1, -1));
         return output;
     }

@@ -22,9 +22,9 @@ import org.tensorflow.lite.examples.detection.customview.OverlayView;
 import org.tensorflow.lite.examples.detection.env.ImageUtils;
 import org.tensorflow.lite.examples.detection.env.Logger;
 import org.tensorflow.lite.examples.detection.env.Utils;
+import org.tensorflow.lite.examples.detection.tracking.MultiBoxTracker;
 import org.tensorflow.lite.examples.detection.yolo8.ClassifierV8;
 import org.tensorflow.lite.examples.detection.yolo8.YoloV8Classifier;
-import org.tensorflow.lite.examples.detection.tracking.MultiBoxTracker;
 
 import java.io.IOException;
 import java.util.LinkedList;

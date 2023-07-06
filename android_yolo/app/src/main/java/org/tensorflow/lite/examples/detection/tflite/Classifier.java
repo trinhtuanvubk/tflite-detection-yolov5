@@ -18,8 +18,6 @@ package org.tensorflow.lite.examples.detection.tflite;
 import android.graphics.Bitmap;
 import android.graphics.RectF;
 
-import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.util.List;
 
 /**
@@ -28,7 +26,7 @@ import java.util.List;
 public interface Classifier {
     List<Recognition> recognizeImage(Bitmap bitmap);
 //
-    List<recClsOutput> recClsImage(Bitmap bitmap) throws IOException;
+    List<recClsOutput> recClsImage(Bitmap bitmap);
     void enableStatLogging(final boolean debug);
 
     String getStatString();
@@ -163,11 +161,23 @@ public interface Classifier {
 
         private int clsClass;
 
-        public recClsOutput(final String id, final String title, final String clsTitle, final Float confidence, final RectF location, int detectedClass, int clsClass) {
+        private final Float clsConfidence;
+
+        public recClsOutput(final String id, final String title, final String clsTitle, final Float confidence, final Float clsConfidence, final RectF location) {
             this.id = id;
             this.title = title;
             this.clsTitle = clsTitle;
             this.confidence = confidence;
+            this.location = location;
+
+            this.clsConfidence = clsConfidence;
+        }
+        public recClsOutput(final String id, final String title, final String clsTitle, final Float confidence, final Float clsConfidence, final RectF location, int detectedClass, int clsClass) {
+            this.id = id;
+            this.title = title;
+            this.clsTitle = clsTitle;
+            this.confidence = confidence;
+            this.clsConfidence = clsConfidence;
             this.location = location;
             this.detectedClass = detectedClass;
             this.clsClass = clsClass;
@@ -187,6 +197,10 @@ public interface Classifier {
 
         public Float getConfidence() {
             return confidence;
+        }
+
+        public Float getClsConfidence() {
+            return clsConfidence;
         }
 
         public RectF getLocation() {

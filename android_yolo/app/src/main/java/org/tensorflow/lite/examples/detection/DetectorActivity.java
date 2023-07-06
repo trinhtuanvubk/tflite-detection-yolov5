@@ -35,16 +35,20 @@ import android.widget.Toast;
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.ListIterator;
 
 import org.tensorflow.lite.examples.detection.customview.OverlayView;
 import org.tensorflow.lite.examples.detection.customview.OverlayView.DrawCallback;
 import org.tensorflow.lite.examples.detection.env.BorderedText;
 import org.tensorflow.lite.examples.detection.env.ImageUtils;
 import org.tensorflow.lite.examples.detection.env.Logger;
+import org.tensorflow.lite.examples.detection.env.Utils;
 import org.tensorflow.lite.examples.detection.tflite.Classifier;
 import org.tensorflow.lite.examples.detection.tflite.DetectorFactory;
-import org.tensorflow.lite.examples.detection.tflite.YoloV5Classifier;
+//import org.tensorflow.lite.examples.detection.tflite.YoloV5Classifier;
+import org.tensorflow.lite.examples.detection.tflite.YoloV5Combine;
 import org.tensorflow.lite.examples.detection.tracking.MultiBoxTracker;
+
 
 /**
  * An activity that uses a TensorFlowMultiBoxDetector and ObjectTracker to detect and then track
@@ -62,12 +66,15 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
     OverlayView trackingOverlay;
     private Integer sensorOrientation;
 
-    private YoloV5Classifier detector;
+//    private YoloV5Classifier detector;
+    private YoloV5Combine detector;
 
     private long lastProcessingTimeMs;
     private long lastProcessingTimeMs2;
     private Bitmap rgbFrameBitmap = null;
     private Bitmap croppedBitmap = null;
+
+    private int[] padShape= {0,0};
     private Bitmap cropCopyBitmap = null;
 
     private boolean computingDetection = false;
@@ -95,7 +102,8 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
         final String modelString = modelStrings.get(modelIndex);
 
         try {
-            detector = DetectorFactory.getDetector(getAssets(), modelString);
+//            detector = DetectorFactory.getDetector(getAssets(), modelString);
+            detector = DetectorFactory.getDetCls(getAssets(), modelString);
         } catch (final IOException e) {
             e.printStackTrace();
             LOGGER.e(e, "Exception initializing classifier!");
@@ -173,7 +181,8 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
             // Try to load model.
 
             try {
-                detector = DetectorFactory.getDetector(getAssets(), modelString);
+//                detector = DetectorFactory.getDetector(getAssets(), modelString);
+                detector = DetectorFactory.getDetCls(getAssets(), modelString);
                 // Customize the interpreter to the type of device we want to use.
                 if (detector == null) {
                     return;
@@ -228,15 +237,22 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
         LOGGER.i("Preparing image " + currTimestamp + " for detection in bg thread.");
 
         rgbFrameBitmap.setPixels(getRgbBytes(), 0, previewWidth, 0, 0, previewWidth, previewHeight);
-
+        Matrix matrix = new Matrix();
+        matrix.postRotate(270);
+        Bitmap scaledBitmap = Bitmap.createScaledBitmap(rgbFrameBitmap, previewWidth, previewHeight, true);
+        Bitmap rotatedBitmap = Bitmap.createBitmap(scaledBitmap, 0, 0, scaledBitmap.getWidth(), scaledBitmap.getHeight(), matrix, true);
         readyForNextImage();
+        int cropSize = detector.getInputSize();
+//       vuttttttttttt
+        croppedBitmap = Utils.processBitmap(rotatedBitmap, cropSize);
 
-        final Canvas canvas = new Canvas(croppedBitmap);
-        canvas.drawBitmap(rgbFrameBitmap, frameToCropTransform, null);
-        // For examining the actual TF input.
-        if (SAVE_PREVIEW_BITMAP) {
-            ImageUtils.saveBitmap(croppedBitmap);
-        }
+        padShape = Utils.getPadShape(rgbFrameBitmap,cropSize);
+//        final Canvas canvas = new Canvas(croppedBitmap);
+//        canvas.drawBitmap(rgbFrameBitmap, frameToCropTransform, null);
+//        // For examining the actual TF input.
+//        if (SAVE_PREVIEW_BITMAP) {
+//            ImageUtils.saveBitmap(croppedBitmap);
+//        }
 
         runInBackground(
                 new Runnable() {
@@ -245,7 +261,8 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                         LOGGER.i("Running detection on image " + currTimestamp);
                         final long startTime = SystemClock.uptimeMillis();
 
-                        final List<Classifier.Recognition> results = detector.recognizeImage(croppedBitmap);
+//                        final List<Classifier.Recognition> results = detector.recognizeImage(croppedBitmap);
+                        final List<Classifier.recClsOutput> results = detector.recClsImage(croppedBitmap);
                         lastProcessingTimeMs = SystemClock.uptimeMillis() - startTime;
                         final long startTime2 = SystemClock.uptimeMillis();
                         Log.e("CHECK", "run: " + results.size());
@@ -264,11 +281,16 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                                 break;
                         }
 
-                        final List<Classifier.Recognition> mappedRecognitions =
-                                new LinkedList<Classifier.Recognition>();
+                        final List<Classifier.recClsOutput> mappedRecognitions =
+                                new LinkedList<>();
 
-                        for (final Classifier.Recognition result : results) {
+                        for (final Classifier.recClsOutput result : results) {
                             final RectF location = result.getLocation();
+                            float newLeft = location.left - padShape[0];
+                            float newTop = location.top - padShape[1];
+                            float newRight = location.right - padShape[0];
+                            float newBottom = location.bottom - padShape[1];
+                            location.set(newRight, newBottom, newLeft, newTop);
                             if (location != null && result.getConfidence() >= minimumConfidence) {
                                 canvas.drawRect(location, paint);
 
