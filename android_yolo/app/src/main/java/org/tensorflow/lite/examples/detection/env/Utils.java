@@ -1,6 +1,7 @@
 package org.tensorflow.lite.examples.detection.env;
 
 import android.content.Context;
+import android.graphics.Color;
 import android.graphics.RectF;
 import android.graphics.Rect;
 import android.content.res.AssetFileDescriptor;
@@ -153,34 +154,60 @@ public class Utils {
         return matrix;
     }
 
-    public static Bitmap processBitmap(Bitmap source, int size){
+//    public static Bitmap processBitmap(Bitmap source, int size){
+//
+//        int image_height = source.getHeight();
+//        int image_width = source.getWidth();
+//        int new_width;
+//        int new_height;
+//        float ratio1 = (float) size / image_height;
+//        float ratio2 = (float) size / image_width;
+//
+//        if (ratio1 < ratio2) {
+//            new_height = size;
+//            new_width = (int) (ratio1 * image_width);
+//        }
+//        else {
+//            new_height = (int) (ratio2 * image_height);
+//            new_width = size;
+//        }
+//
+//        Bitmap croppedBitmap = Bitmap.createBitmap(new_width, new_height, Bitmap.Config.ARGB_8888);
+//
+//        Matrix frameToCropTransformations = getTransformationMatrix(image_width,image_height,new_width,new_height,0,false);
+//        Matrix cropToFrameTransformations = new Matrix();
+//        frameToCropTransformations.invert(cropToFrameTransformations);
+//
+//        final Canvas canvas = new Canvas(croppedBitmap);
+//        canvas.drawBitmap(source, frameToCropTransformations, null);
+//
+//        return croppedBitmap;
+//    }
 
-        int image_height = source.getHeight();
-        int image_width = source.getWidth();
-        int new_width;
-        int new_height;
-        float ratio1 = (float) size / image_height;
-        float ratio2 = (float) size / image_width;
+    public static Bitmap processBitmap(Bitmap source, int targetSize){
 
-        if (ratio1 < ratio2) {
-            new_height = size;
-            new_width = (int) (ratio1 * image_width);
+        int width = source.getWidth();
+        int height = source.getHeight();
+        float scale;
+        if (width >= height) {
+            scale = (float) targetSize / width;
+        } else {
+            scale = (float) targetSize / height;
         }
-        else {
-            new_height = (int) (ratio2 * image_height);
-            new_width = size;
-        }
+        int newWidth = (int) (scale * width);
+        int newHeight = (int) (scale * height);
+        // Resize ảnh
+        Matrix matrix = new Matrix();
+        matrix.postScale(scale, scale);
+        Bitmap resizedBitmap = Bitmap.createBitmap(source, 0, 0, width, height, matrix, false);
 
-        Bitmap croppedBitmap = Bitmap.createBitmap(new_width, new_height, Bitmap.Config.ARGB_8888);
-
-        Matrix frameToCropTransformations = getTransformationMatrix(image_width,image_height,new_width,new_height,0,false);
-        Matrix cropToFrameTransformations = new Matrix();
-        frameToCropTransformations.invert(cropToFrameTransformations);
-
-        final Canvas canvas = new Canvas(croppedBitmap);
-        canvas.drawBitmap(source, frameToCropTransformations, null);
-
-        return croppedBitmap;
+        Bitmap paddedBitmap = Bitmap.createBitmap(targetSize, targetSize, Bitmap.Config.ARGB_8888);
+        paddedBitmap.eraseColor(Color.rgb(114, 114, 114));
+        Canvas canvas = new Canvas(paddedBitmap);
+        int left = (targetSize - newWidth) / 2;
+        int top = (targetSize - newHeight) / 2;
+        canvas.drawBitmap(resizedBitmap, left, top, null);
+        return paddedBitmap;
     }
 
     public static Bitmap postcrop_Bitmap(Bitmap source, RectF location){

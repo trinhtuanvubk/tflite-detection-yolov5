@@ -409,13 +409,14 @@ public class YoloV5Combine implements Classifier {
         imgData.rewind();
         for (int i = 0; i < INPUT_SIZE; ++i) {
             for (int j = 0; j < INPUT_SIZE; ++j) {
-                int pixelValue;
-                if ((i < pad_height/2 || i > (INPUT_SIZE-pad_height/2) && pad_width==0) || (i < pad_width/2 || i > (INPUT_SIZE-pad_width/2) && pad_height==0)) {
-                    pixelValue = 125;
-                }
-                else {
-                    pixelValue = intValues[i * INPUT_SIZE + j];
-                }
+//                int pixelValue;
+//                if (((i < pad_height/2 || i > (INPUT_SIZE-pad_height/2)) && pad_width==0) || ((j < pad_width/2 || j > (INPUT_SIZE-pad_width/2)) && pad_height==0)) {
+//                    pixelValue = 114;
+//                }
+//                else {
+//                    pixelValue = intValues[(i-pad_height/2) * INPUT_SIZE + j - pad_width/2];
+//                }
+                int pixelValue = intValues[i * INPUT_SIZE + j];
 
                 if (isModelQuantized) {
                     // Quantized model
@@ -436,19 +437,21 @@ public class YoloV5Combine implements Classifier {
 
         bitmap.getPixels(postintValues, 0, bitmap.getWidth(), 0, 0, bitmap.getWidth(), bitmap.getHeight());
         int pixel = 0;
-        int pad_width = INPUT_SIZE - bitmap.getWidth();
-        int pad_height = INPUT_SIZE - bitmap.getHeight();
+//        int pad_width = INPUT_SIZE - bitmap.getWidth();
+//        int pad_height = INPUT_SIZE - bitmap.getHeight();
 
         postimgData.rewind();
         for (int i = 0; i < INPUT_SIZE; ++i) {
             for (int j = 0; j < INPUT_SIZE; ++j) {
-                int pixelValue;
-                if ((i < pad_height/2 || i > (INPUT_SIZE-pad_height/2) && pad_width==0) || (i < pad_width/2 || i > (INPUT_SIZE-pad_width/2) && pad_height==0)) {
-                    pixelValue = 125;
-                }
-                else {
-                    pixelValue = postintValues[i * INPUT_SIZE + j];
-                }
+//                int pixelValue;
+//                if (((i < pad_height/2 || i > (INPUT_SIZE-pad_height/2)) && pad_width==0) || ((j < pad_width/2 || j > (INPUT_SIZE-pad_width/2)) && pad_height==0)) {
+//                    pixelValue = 114;
+//                }
+//                else {
+////                    pixelValue = postintValues[i * INPUT_SIZE + j];
+//                    pixelValue = postintValues[(i-pad_height/2) * INPUT_SIZE + j - pad_width/2];
+//                }
+                int pixelValue = postintValues[i * INPUT_SIZE + j];
 
 
                 if (isModelQuantized) {
